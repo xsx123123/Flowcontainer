@@ -1792,3 +1792,142 @@
 2026-04-01 21:22:29.878 | INFO     | __main__:test_image:453 - 测试镜像: rnaflow-rsem:0.1
 2026-04-01 21:22:59.910 | ERROR    | __main__:test_image:490 - 工具 rsem-calculate-expression 测试异常: Command '['docker', 'run', '--rm', 'rnaflow-rsem:0.1', 'which', 'rsem-calculate-expression']' timed out after 30 seconds
 2026-04-01 21:22:59.910 | ERROR    | __main__:test_image:490 - 工具 rsem-calculate-expression 测试异常: Command '['docker', 'run', '--rm', 'rnaflow-rsem:0.1', 'which', 'rsem-calculate-expression']' timed out after 30 seconds
+2026-04-01 22:27:41.906 | INFO     | __main__:generate_dockerfile:260 - 使用自定义健康检查命令: rsem-calculate-expression -h
+2026-04-01 22:27:41.906 | INFO     | __main__:generate_dockerfile:301 - 生成 Dockerfile: /tmp/tmpl26qatr9/Dockerfile
+2026-04-01 22:27:41.907 | INFO     | __main__:generate_dockerfile:302 - 复制环境文件: /tmp/tmpl26qatr9/rsem.yaml
+2026-04-01 22:27:41.907 | DEBUG    | __main__:generate_dockerfile:303 - 检测到工具: rsem, samtools
+2026-04-01 22:27:41.907 | DEBUG    | __main__:generate_dockerfile:304 - 健康检查命令: rsem-calculate-expression -h
+2026-04-01 22:27:41.907 | INFO     | __main__:build_image:375 - 开始构建镜像: rnaflow-rsem:0.1
+2026-04-01 22:27:41.907 | DEBUG    | __main__:build_image:376 - 构建命令: docker build -t rnaflow-rsem:0.1 -f /tmp/tmpl26qatr9/Dockerfile /tmp/tmpl26qatr9
+2026-04-01 22:27:42.322 | DEBUG    | __main__:build_image:400 - #0 building with "default" instance using docker driver
+2026-04-01 22:27:42.323 | DEBUG    | __main__:build_image:400 - #1 [internal] load build definition from Dockerfile
+2026-04-01 22:27:42.805 | DEBUG    | __main__:build_image:400 - #1 transferring dockerfile:
+2026-04-01 22:27:42.957 | DEBUG    | __main__:build_image:400 - #1 transferring dockerfile: 2.48kB done
+2026-04-01 22:27:43.242 | SUCCESS  | __main__:build_image:398 - #1 DONE 1.1s
+2026-04-01 22:27:43.431 | DEBUG    | __main__:build_image:400 - #2 [internal] load metadata for docker.io/mambaorg/micromamba:1.5.10
+2026-04-01 22:27:43.431 | SUCCESS  | __main__:build_image:398 - #2 DONE 0.0s
+2026-04-01 22:27:43.431 | DEBUG    | __main__:build_image:400 - #3 [internal] load .dockerignore
+2026-04-01 22:27:45.027 | DEBUG    | __main__:build_image:400 - #3 transferring context:
+2026-04-01 22:27:45.179 | DEBUG    | __main__:build_image:400 - #3 transferring context: 2B done
+2026-04-01 22:27:45.720 | SUCCESS  | __main__:build_image:398 - #3 DONE 2.4s
+2026-04-01 22:27:46.816 | DEBUG    | __main__:build_image:400 - #4 [internal] preparing inline document
+2026-04-01 22:27:46.817 | SUCCESS  | __main__:build_image:398 - #4 DONE 0.0s
+2026-04-01 22:27:46.817 | DEBUG    | __main__:build_image:400 - #5 [1/9] FROM docker.io/mambaorg/micromamba:1.5.10
+2026-04-01 22:27:46.817 | SUCCESS  | __main__:build_image:398 - #5 DONE 0.0s
+2026-04-01 22:27:46.817 | DEBUG    | __main__:build_image:400 - #6 [internal] load build context
+2026-04-01 22:27:52.399 | DEBUG    | __main__:build_image:400 - #6 transferring context:
+2026-04-01 22:27:52.551 | DEBUG    | __main__:build_image:400 - #6 transferring context: 5.52kB done
+2026-04-01 22:27:54.482 | SUCCESS  | __main__:build_image:398 - #6 DONE 7.8s
+2026-04-01 22:27:55.316 | DEBUG    | __main__:build_image:400 - #7 [2/9] RUN apt-get update && apt-get install -y --no-install-recommends     procps     && rm -rf /var/lib/apt/lists/*
+2026-04-01 22:27:55.316 | DEBUG    | __main__:build_image:400 - #7 CACHED
+2026-04-01 22:27:55.316 | DEBUG    | __main__:build_image:400 - #8 [3/9] COPY rsem.yaml /tmp/environment.yml
+2026-04-01 22:27:55.316 | DEBUG    | __main__:build_image:400 - #8 CACHED
+2026-04-01 22:27:55.316 | DEBUG    | __main__:build_image:400 - #9 [4/9] RUN micromamba create -y -n rsem -f /tmp/environment.yml     && micromamba clean -afy     && rm /tmp/environment.yml
+2026-04-01 22:27:55.316 | DEBUG    | __main__:build_image:400 - #9 CACHED
+2026-04-01 22:27:55.316 | DEBUG    | __main__:build_image:400 - #10 [5/9] RUN echo "micromamba activate rsem" >> /root/.bashrc &&     echo "micromamba activate rsem" >> /root/.profile
+2026-04-01 22:27:55.316 | DEBUG    | __main__:build_image:400 - #10 CACHED
+2026-04-01 22:27:55.316 | DEBUG    | __main__:build_image:400 - #11 [6/9] RUN cat > /usr/local/bin/activate_env.sh << 'EOF'
+2026-04-01 22:27:55.316 | DEBUG    | __main__:build_image:400 - #11 CACHED
+2026-04-01 22:27:55.316 | DEBUG    | __main__:build_image:400 - #12 [7/9] RUN chmod +x /usr/local/bin/activate_env.sh
+2026-04-01 22:27:55.317 | DEBUG    | __main__:build_image:400 - #12 CACHED
+2026-04-01 22:27:55.317 | DEBUG    | __main__:build_image:400 - #13 [8/9] COPY <<EOF /usr/local/bin/entrypoint.sh
+2026-04-01 22:27:55.317 | DEBUG    | __main__:build_image:400 - #13 CACHED
+2026-04-01 22:27:55.317 | DEBUG    | __main__:build_image:400 - #14 [9/9] RUN chmod +x /usr/local/bin/entrypoint.sh
+2026-04-01 22:27:55.317 | DEBUG    | __main__:build_image:400 - #14 CACHED
+2026-04-01 22:27:55.416 | DEBUG    | __main__:build_image:400 - #15 exporting to image
+2026-04-01 22:27:55.417 | DEBUG    | __main__:build_image:400 - #15 exporting layers done
+2026-04-01 22:27:55.417 | DEBUG    | __main__:build_image:400 - #15 writing image sha256:2fd517264ee336e7d9c0267eae96c66ac528ea52fed75b61e118e8c2a8dac7a7 0.0s done
+2026-04-01 22:27:55.417 | DEBUG    | __main__:build_image:400 - #15 naming to docker.io/library/rnaflow-rsem:0.1
+2026-04-01 22:27:55.592 | DEBUG    | __main__:build_image:400 - #15 naming to docker.io/library/rnaflow-rsem:0.1 0.1s done
+2026-04-01 22:27:55.593 | SUCCESS  | __main__:build_image:398 - #15 DONE 0.2s
+2026-04-01 22:27:59.185 | SUCCESS  | __main__:build_image:405 - 镜像构建成功: rnaflow-rsem:0.1
+2026-04-01 22:27:59.188 | INFO     | __main__:test_image:470 - 测试镜像: rnaflow-rsem:0.1
+2026-04-01 22:28:11.936 | DEBUG    | __main__:test_image:501 - 工具 rsem-calculate-expression 测试通过: /opt/conda/envs/rsem/bin/rsem-calculate-expression
+2026-04-01 22:28:11.954 | INFO     | __main__:update_container_env_yaml:593 - 容器环境配置已更新: /home/zj/pipeline/RNAFlow/container_env/container_env.yaml
+2026-04-01 22:31:26.729 | INFO     | __main__:generate_dockerfile:260 - 使用自定义健康检查命令: rsem-calculate-expression -h
+2026-04-01 22:31:26.729 | INFO     | __main__:generate_dockerfile:301 - 生成 Dockerfile: /tmp/tmpb28k4yoo/Dockerfile
+2026-04-01 22:31:26.729 | INFO     | __main__:generate_dockerfile:302 - 复制环境文件: /tmp/tmpb28k4yoo/rsem.yaml
+2026-04-01 22:31:26.729 | DEBUG    | __main__:generate_dockerfile:303 - 检测到工具: rsem, samtools
+2026-04-01 22:31:26.729 | DEBUG    | __main__:generate_dockerfile:304 - 健康检查命令: rsem-calculate-expression -h
+2026-04-01 22:31:26.729 | INFO     | __main__:build_image:375 - 开始构建镜像: rnaflow-rsem:0.1
+2026-04-01 22:31:26.729 | DEBUG    | __main__:build_image:376 - 构建命令: docker build -t rnaflow-rsem:0.1 -f /tmp/tmpb28k4yoo/Dockerfile /tmp/tmpb28k4yoo
+2026-04-01 22:31:26.821 | DEBUG    | __main__:build_image:400 - #0 building with "default" instance using docker driver
+2026-04-01 22:31:26.822 | DEBUG    | __main__:build_image:400 - #1 [internal] load build definition from Dockerfile
+2026-04-01 22:31:26.933 | DEBUG    | __main__:build_image:400 - #1 transferring dockerfile: 2.48kB done
+2026-04-01 22:31:26.935 | SUCCESS  | __main__:build_image:398 - #1 DONE 0.1s
+2026-04-01 22:31:26.935 | DEBUG    | __main__:build_image:400 - #2 [internal] load metadata for docker.io/mambaorg/micromamba:1.5.10
+2026-04-01 22:31:26.935 | SUCCESS  | __main__:build_image:398 - #2 DONE 0.0s
+2026-04-01 22:31:26.935 | DEBUG    | __main__:build_image:400 - #3 [internal] load .dockerignore
+2026-04-01 22:31:26.935 | DEBUG    | __main__:build_image:400 - #3 transferring context: 2B done
+2026-04-01 22:31:26.935 | SUCCESS  | __main__:build_image:398 - #3 DONE 0.1s
+2026-04-01 22:31:27.104 | DEBUG    | __main__:build_image:400 - #4 [internal] preparing inline document
+2026-04-01 22:31:27.105 | SUCCESS  | __main__:build_image:398 - #4 DONE 0.0s
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #5 [1/9] FROM docker.io/mambaorg/micromamba:1.5.10
+2026-04-01 22:31:27.105 | SUCCESS  | __main__:build_image:398 - #5 DONE 0.0s
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #6 [internal] load build context
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #6 transferring context: 5.52kB done
+2026-04-01 22:31:27.105 | SUCCESS  | __main__:build_image:398 - #6 DONE 0.1s
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #7 [7/9] RUN chmod +x /usr/local/bin/activate_env.sh
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #7 CACHED
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #8 [8/9] COPY <<EOF /usr/local/bin/entrypoint.sh
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #8 CACHED
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #9 [3/9] COPY rsem.yaml /tmp/environment.yml
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #9 CACHED
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #10 [5/9] RUN echo "micromamba activate rsem" >> /root/.bashrc &&     echo "micromamba activate rsem" >> /root/.profile
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #10 CACHED
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #11 [2/9] RUN apt-get update && apt-get install -y --no-install-recommends     procps     && rm -rf /var/lib/apt/lists/*
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #11 CACHED
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #12 [4/9] RUN micromamba create -y -n rsem -f /tmp/environment.yml     && micromamba clean -afy     && rm /tmp/environment.yml
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #12 CACHED
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #13 [6/9] RUN cat > /usr/local/bin/activate_env.sh << 'EOF'
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #13 CACHED
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #14 [9/9] RUN chmod +x /usr/local/bin/entrypoint.sh
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #14 CACHED
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #15 exporting to image
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #15 exporting layers done
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #15 writing image sha256:2fd517264ee336e7d9c0267eae96c66ac528ea52fed75b61e118e8c2a8dac7a7 done
+2026-04-01 22:31:27.105 | DEBUG    | __main__:build_image:400 - #15 naming to docker.io/library/rnaflow-rsem:0.1 done
+2026-04-01 22:31:27.106 | SUCCESS  | __main__:build_image:398 - #15 DONE 0.0s
+2026-04-01 22:31:27.109 | SUCCESS  | __main__:build_image:405 - 镜像构建成功: rnaflow-rsem:0.1
+2026-04-01 22:31:27.113 | INFO     | __main__:test_image:470 - 测试镜像: rnaflow-rsem:0.1
+2026-04-01 22:31:27.483 | DEBUG    | __main__:test_image:501 - 工具 rsem-calculate-expression 测试通过: /opt/conda/envs/rsem/bin/rsem-calculate-expression
+2026-04-01 22:31:27.504 | INFO     | __main__:update_container_env_yaml:593 - 容器环境配置已更新: /home/zj/pipeline/RNAFlow/container_env/container_env.yaml
+2026-04-01 22:34:21.856 | INFO     | __main__:generate_dockerfile:260 - 使用自定义健康检查命令: rsem-calculate-expression -h
+2026-04-01 22:34:21.856 | INFO     | __main__:generate_dockerfile:301 - 生成 Dockerfile: /tmp/tmpfqbzy1py/Dockerfile
+2026-04-01 22:34:21.856 | INFO     | __main__:generate_dockerfile:302 - 复制环境文件: /tmp/tmpfqbzy1py/rsem.yaml
+2026-04-01 22:34:21.856 | DEBUG    | __main__:generate_dockerfile:303 - 检测到工具: rsem, samtools
+2026-04-01 22:34:21.856 | DEBUG    | __main__:generate_dockerfile:304 - 健康检查命令: rsem-calculate-expression -h
+2026-04-01 22:34:21.856 | INFO     | __main__:build_image:375 - 开始构建镜像: rnaflow-rsem:0.1
+2026-04-01 22:34:21.857 | DEBUG    | __main__:build_image:376 - 构建命令: docker build -t rnaflow-rsem:0.1 -f /tmp/tmpfqbzy1py/Dockerfile /tmp/tmpfqbzy1py
+2026-04-01 22:34:22.242 | SUCCESS  | __main__:build_image:402 - 镜像构建成功: rnaflow-rsem:0.1
+2026-04-01 22:34:22.245 | INFO     | __main__:test_image:477 - 测试镜像工具: rsem-calculate-expression
+2026-04-01 22:34:22.627 | SUCCESS  | __main__:test_image:492 -   ✓ rsem-calculate-expression: /opt/conda/envs/rsem/bin/rsem-calculate-expression
+2026-04-01 22:34:22.641 | SUCCESS  | __main__:main:1012 - 构建完成！耗时: 0.8秒
+2026-04-01 22:34:22.645 | INFO     | __main__:update_container_env_yaml:581 - 容器环境配置已更新: /home/zj/pipeline/RNAFlow/container_env/container_env.yaml
+2026-04-01 22:34:22.645 | INFO     | __main__:main:1037 - 镜像信息已记录到: container_env.yaml
+[2026-04-01 22:36:33.829] INFO     | __main__:generate_dockerfile:314 - 使用自定义健康检查命令: rsem-calculate-expression -h
+[2026-04-01 22:36:33.830] INFO     | __main__:generate_dockerfile:355 - 生成 Dockerfile: /tmp/tmpb88bl0ve/Dockerfile
+[2026-04-01 22:36:33.830] INFO     | __main__:generate_dockerfile:356 - 复制环境文件: /tmp/tmpb88bl0ve/rsem.yaml
+[2026-04-01 22:36:33.830] DEBUG    | __main__:generate_dockerfile:357 - 检测到工具: rsem, samtools
+[2026-04-01 22:36:33.830] DEBUG    | __main__:generate_dockerfile:358 - 健康检查命令: rsem-calculate-expression -h
+[2026-04-01 22:36:33.831] INFO     | __main__:build_image:429 - 开始构建镜像: rnaflow-rsem:0.1
+[2026-04-01 22:36:33.831] DEBUG    | __main__:build_image:430 - 构建命令: docker build -t rnaflow-rsem:0.1 -f /tmp/tmpb88bl0ve/Dockerfile /tmp/tmpb88bl0ve
+[2026-04-01 22:36:34.245] SUCCESS  | __main__:build_image:456 - 镜像构建成功: rnaflow-rsem:0.1
+[2026-04-01 22:36:34.249] INFO     | __main__:test_image:531 - 测试镜像工具: rsem-calculate-expression
+[2026-04-01 22:36:34.613] SUCCESS  | __main__:test_image:546 -   ✓ rsem-calculate-expression: /opt/conda/envs/rsem/bin/rsem-calculate-expression
+[2026-04-01 22:36:34.628] SUCCESS  | __main__:main:1066 - 🎉 构建完成！耗时 0.8 秒 ✨
+[2026-04-01 22:36:34.632] INFO     | __main__:update_container_env_yaml:635 - 容器环境配置已更新: /home/zj/pipeline/RNAFlow/container_env/container_env.yaml
+[2026-04-01 22:36:34.633] INFO     | __main__:main:1091 - 📝 镜像信息已记录到: [cyan]container_env.yaml[/cyan]
+[2026-04-01 22:40:57.307] INFO     | __main__:generate_dockerfile:322 - 使用自定义健康检查命令: rsem-calculate-expression -h
+[2026-04-01 22:40:57.308] INFO     | __main__:generate_dockerfile:363 - 生成 Dockerfile: /tmp/tmporc80_p7/Dockerfile
+[2026-04-01 22:40:57.308] INFO     | __main__:generate_dockerfile:364 - 复制环境文件: /tmp/tmporc80_p7/rsem.yaml
+[2026-04-01 22:40:57.308] DEBUG    | __main__:generate_dockerfile:365 - 检测到工具: rsem, samtools
+[2026-04-01 22:40:57.308] DEBUG    | __main__:generate_dockerfile:366 - 健康检查命令: rsem-calculate-expression -h
+[2026-04-01 22:40:57.308] INFO     | __main__:build_image:437 - 🐳 开始构建镜像: [cyan]rnaflow-rsem:0.1[/cyan]
+[2026-04-01 22:40:57.309] DEBUG    | __main__:build_image:438 - 📝 构建命令: docker build -t rnaflow-rsem:0.1 -f /tmp/tmporc80_p7/Dockerfile /tmp/tmporc80_p7
+[2026-04-01 22:40:57.711] SUCCESS  | __main__:build_image:464 - 🎊 镜像构建成功: [green]rnaflow-rsem:0.1[/green]
+[2026-04-01 22:40:57.715] INFO     | __main__:test_image:539 - 🔬 测试镜像工具 (1个): rsem-calculate-expression
+[2026-04-01 22:40:58.109] SUCCESS  | __main__:test_image:554 -    ✅ rsem-calculate-expression → [dim]/opt/conda/envs/rsem/bin/rsem-calculate-expression[/dim]
+[2026-04-01 22:40:58.123] SUCCESS  | __main__:main:1086 - 🎉 构建完成！耗时 0.8 秒 ✨
+[2026-04-01 22:40:58.127] INFO     | __main__:update_container_env_yaml:643 - 容器环境配置已更新: /home/zj/pipeline/RNAFlow/container_env/container_env.yaml
+[2026-04-01 22:40:58.127] INFO     | __main__:main:1111 - 📝 镜像信息已记录到: [cyan]container_env.yaml[/cyan]

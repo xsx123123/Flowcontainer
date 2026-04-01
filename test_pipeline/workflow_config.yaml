@@ -1,0 +1,9 @@
+# Flowcontainer 测试工作流配置
+# 用于动态选择镜像
+
+# 选择要使用的 RSEM 镜像
+# 可用选项: rnaflow-rsem, test-rsem
+rsem_image: "rnaflow-rsem"
+
+# 测试模式标记
+test_mode: false

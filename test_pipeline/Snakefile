@@ -1,0 +1,433 @@
+"""
+Flowcontainer 镜像测试 Snakefile
+展示如何在 Snakemake 中使用 container_env.yaml 中的镜像
+
+使用方法:
+    # 1. 直接运行 (使用本地镜像)
+    snakemake -c 1
+
+    # 2. 使用容器运行 (需要 singularity/apptainer)
+    snakemake -c 1 --use-singularity
+"""
+
+import yaml
+from pathlib import Path
+
+# ============================================================================
+# 读取 container_env.yaml 配置
+# ============================================================================
+
+CONFIG_FILE = Path("../container_env.yaml")  # 根据实际位置调整
+
+def load_container_config():
+    """加载容器环境配置"""
+    if not CONFIG_FILE.exists():
+        raise FileNotFoundError(f"找不到配置文件: {CONFIG_FILE}")
+    
+    with open(CONFIG_FILE) as f:
+        return yaml.safe_load(f)
+
+# 加载配置
+container_config = load_container_config()
+
+# 获取镜像列表
+IMAGES = container_config.get("images", {})
+
+# 打印加载的镜像（用于调试）
+print("=" * 60)
+print("📦 已加载的容器镜像:")
+for name, info in IMAGES.items():
+    print(f"   • {name}: {info['full_image_uri']}")
+print("=" * 60)
+
+# ============================================================================
+# 镜像获取辅助函数
+# ============================================================================
+
+def get_image(name, registry=None, prefer_remote=True):
+    """
+    根据名称获取镜像 URI
+    
+    Args:
+        name: 镜像名称 (如 "rnaflow-rsem", "test-rsem")
+        registry: 强制指定 registry（覆盖配置），如 "registry.example.com/"
+        prefer_remote: 是否优先使用远程镜像（如果已推送）
+    
+    Returns:
+        docker://<image_uri>
+    
+    Examples:
+        # 使用 container_env.yaml 中的默认配置
+        get_image("rnaflow-rsem")
+        
+        # 强制使用指定 registry
+        get_image("rnaflow-rsem", registry="docker.io/myuser/")
+        
+        # 强制使用本地镜像（不尝试远程）
+        get_image("rnaflow-rsem", prefer_remote=False)
+    """
+    if name not in IMAGES:
+        available = ", ".join(IMAGES.keys())
+        raise ValueError(f"未知镜像 '{name}'，可用镜像: {available}")
+    
+    info = IMAGES[name]
+    
+    # 如果强制指定了 registry，使用它
+    if registry:
+        tag = info["tag"]
+        uri = f"{registry}{tag}"
+        return f"docker://{uri}"
+    
+    # 根据 prefer_remote 策略选择
+    if prefer_remote and info.get("pushed") and info.get("registry"):
+        # 使用已推送的远程镜像
+        uri = info["full_image_uri"]
+        print(f"🌐 使用远程镜像: {uri}")
+    else:
+        # 使用本地镜像
+        uri = info["tag"]
+        print(f"🏠 使用本地镜像: {uri}")
+    
+    return f"docker://{uri}"
+
+def get_image_by_tool(tool_name, registry=None, prefer_remote=True):
+    """
+    根据工具名称查找对应的镜像
+    
+    Args:
+        tool_name: 工具名称 (如 "rsem", "samtools")
+        registry: 强制指定 registry
+        prefer_remote: 是否优先使用远程镜像
+    
+    Returns:
+        docker://<image_uri>
+    """
+    for name, info in IMAGES.items():
+        if tool_name in info.get("tools", []):
+            return get_image(name, registry=registry, prefer_remote=prefer_remote)
+    
+    raise ValueError(f"找不到包含工具 '{tool_name}' 的镜像")
+
+def get_remote_image(name, registry=None):
+    """
+    强制获取远程镜像（要求已推送）
+    
+    Args:
+        name: 镜像名称
+        registry: 可选的 registry 覆盖
+    
+    Returns:
+        docker://<remote_image_uri>
+    
+    Raises:
+        ValueError: 如果镜像未推送且未指定 registry
+    """
+    if name not in IMAGES:
+        raise ValueError(f"未知镜像: {name}")
+    
+    info = IMAGES[name]
+    
+    if registry:
+        return f"docker://{registry}{info['tag']}"
+    
+    if not info.get("pushed"):
+        raise ValueError(
+            f"镜像 '{name}' 未推送，无法使用远程版本。"
+            f"请先用 flowcontainer build --push 推送，"
+            f"或指定 registry 参数"
+        )
+    
+    return f"docker://{info['full_image_uri']}"
+
+def get_local_image(name):
+    """
+    强制获取本地镜像（忽略远程）
+    
+    Args:
+        name: 镜像名称
+    
+    Returns:
+        docker://<local_image_tag>
+    """
+    if name not in IMAGES:
+        raise ValueError(f"未知镜像: {name}")
+    
+    tag = IMAGES[name]["tag"]
+    return f"docker://{tag}"
+
+# ============================================================================
+# 默认所有规则
+# ============================================================================
+
+rule all:
+    input:
+        "results/rsem_test_completed.txt",
+        "results/samtools_test_completed.txt",
+        "results/multi_tool_test.txt",
+
+# ============================================================================
+# 示例 1: 使用特定镜像运行命令
+# ============================================================================
+
+rule test_rsem_container:
+    """测试 RSEM 容器"""
+    output:
+        "results/rsem_test_completed.txt"
+    container:
+        get_image("rnaflow-rsem")  # 使用 container_env.yaml 中的镜像
+    shell:
+        """
+        echo "🧪 测试 RSEM 容器..." > {output}
+        echo "📋 RSEM 版本信息:" >> {output}
+        rsem-calculate-expression --version >> {output} 2>&1 || true
+        echo "" >> {output}
+        echo "✅ RSEM 容器测试完成" >> {output}
+        echo "⏰ 时间: $(date)" >> {output}
+        """
+
+# ============================================================================
+# 示例 2: 根据工具自动选择镜像
+# ============================================================================
+
+rule test_samtools_container:
+    """测试 Samtools 容器（自动根据工具名查找镜像）"""
+    output:
+        "results/samtools_test_completed.txt"
+    container:
+        get_image_by_tool("samtools")  # 自动查找包含 samtools 的镜像
+    shell:
+        """
+        echo "🧪 测试 Samtools 容器..." > {output}
+        echo "📋 Samtools 版本信息:" >> {output}
+        samtools --version >> {output} 2>&1 || true
+        echo "" >> {output}
+        echo "✅ Samtools 容器测试完成" >> {output}
+        """
+
+# ============================================================================
+# 示例 3: 同一容器中运行多个工具
+# ============================================================================
+
+rule multi_tool_in_one_container:
+    """在同一个容器中测试多个工具"""
+    output:
+        "results/multi_tool_test.txt"
+    container:
+        get_image("rnaflow-rsem")
+    shell:
+        """
+        echo "🧪 多工具测试报告" > {output}
+        echo "==================" >> {output}
+        echo "" >> {output}
+        
+        echo "📊 镜像信息:" >> {output}
+        echo "  名称: rnaflow-rsem" >> {output}
+        echo "  URI: {container}" >> {output}
+        echo "" >> {output}
+        
+        echo "🔧 可用工具测试:" >> {output}
+        echo "" >> {output}
+        
+        echo "1. RSEM:" >> {output}
+        which rsem-calculate-expression >> {output} 2>&1
+        rsem-calculate-expression --version >> {output} 2>&1 || echo "   ⚠️ 无法获取版本" >> {output}
+        echo "" >> {output}
+        
+        echo "2. Samtools:" >> {output}
+        which samtools >> {output} 2>&1
+        samtools --version | head -1 >> {output} 2>&1 || echo "   ⚠️ 无法获取版本" >> {output}
+        echo "" >> {output}
+        
+        echo "✅ 多工具测试完成" >> {output}
+        """
+
+# ============================================================================
+# 示例 4: 带输入文件的完整流程（模拟）
+# ============================================================================
+
+rule create_sample_input:
+    """创建示例输入文件"""
+    output:
+        "data/sample.txt"
+    shell:
+        """
+        mkdir -p data
+        echo "这是示例输入文件" > {output}
+        echo "用于测试容器处理流程" >> {output}
+        """
+
+rule process_with_container:
+    """使用容器处理输入文件"""
+    input:
+        "data/sample.txt"
+    output:
+        "results/processed.txt"
+    container:
+        get_image("rnaflow-rsem")
+    shell:
+        """
+        echo "📝 处理输入文件: {input}" > {output}
+        echo "" >> {output}
+        echo "📄 输入内容:" >> {output}
+        cat {input} >> {output}
+        echo "" >> {output}
+        echo "🔧 处理工具版本:" >> {output}
+        rsem-calculate-expression --version >> {output} 2>&1 || true
+        echo "" >> {output}
+        echo "✅ 处理完成" >> {output}
+        """
+
+# ============================================================================
+# 示例 5: 动态选择镜像（根据配置）
+# ============================================================================
+
+# 默认配置（可以在命令行用 --config 覆盖）
+configfile: "workflow_config.yaml" if Path("workflow_config.yaml").exists() else []
+
+# 默认配置值
+default_config = {
+    "rsem_image": "rnaflow-rsem",
+    "test_mode": False,
+}
+
+# 合并配置
+for key, value in default_config.items():
+    if key not in config:
+        config[key] = value
+
+rule dynamic_image_selection:
+    """根据配置动态选择镜像"""
+    output:
+        "results/dynamic_test.txt"
+    container:
+        get_image(config["rsem_image"])
+    params:
+        test_mode = config["test_mode"]
+    shell:
+        """
+        echo "🔧 动态镜像选择测试" > {output}
+        echo "配置镜像: {config[rsem_image]}" >> {output}
+        echo "测试模式: {params.test_mode}" >> {output}
+        echo "" >> {output}
+        rsem-calculate-expression --version >> {output} 2>&1 || true
+        """
+
+# ============================================================================
+# 示例 6: 强制使用本地镜像（忽略远程）
+# ============================================================================
+
+rule force_local_image:
+    """强制使用本地镜像（即使有远程版本）"""
+    output:
+        "results/force_local_test.txt"
+    container:
+        get_local_image("rnaflow-rsem")  # 强制使用本地镜像
+    shell:
+        """
+        echo "🏠 强制使用本地镜像测试" > {output}
+        echo "" >> {output}
+        echo "当前使用的镜像:" >> {output}
+        echo "  {container}" >> {output}
+        echo "" >> {output}
+        rsem-calculate-expression --version >> {output} 2>&1 || true
+        """
+
+# ============================================================================
+# 示例 7: 强制使用指定 Registry
+# ============================================================================
+
+REGISTRY = config.get("registry", "")  # 可从配置或命令行获取
+
+rule force_specific_registry:
+    """强制使用指定的 registry"""
+    output:
+        "results/force_registry_test.txt"
+    params:
+        registry = REGISTRY
+    run:
+        if not params.registry:
+            shell("""
+                echo "⚠️ 未指定 registry" > {output}
+                echo "请在 workflow_config.yaml 中设置 registry" >> {output}
+                echo "或使用: snakemake -c 1 --config registry='docker.io/user/'" >> {output}
+            """)
+        else:
+            # 这里展示如何动态获取带 registry 的镜像
+            image_uri = get_image("rnaflow-rsem", registry=params.registry)
+            shell(f"""
+                echo "🌐 使用指定 Registry: {params.registry}" > {{output}}
+                echo "" >> {{output}}
+                echo "完整镜像地址:" >> {{output}}
+                echo "  {image_uri}" >> {{output}}
+            """)
+
+# ============================================================================
+# 实用工具规则
+# ============================================================================
+
+rule list_available_images:
+    """列出所有可用的容器镜像"""
+    output:
+        "results/available_images.txt"
+    run:
+        with open(output[0], 'w') as f:
+            f.write("📦 Flowcontainer 可用镜像列表\n")
+            f.write("=" * 60 + "\n\n")
+            
+            for name, info in IMAGES.items():
+                f.write(f"【{name}】\n")
+                f.write(f"  标签: {info['tag']}\n")
+                f.write(f"  完整URI: {info['full_image_uri']}\n")
+                f.write(f"  镜像ID: {info['image_id']}\n")
+                f.write(f"  大小: {info['size']}\n")
+                f.write(f"  工具: {', '.join(info['tools'])}\n")
+                f.write(f"  创建时间: {info['created_at']}\n")
+                f.write(f"  环境文件: {info['env_file']}\n")
+                f.write(f"  已推送: {info['pushed']}\n")
+                f.write("\n")
+
+rule clean:
+    """清理测试结果"""
+    shell:
+        """
+        rm -rf results/ data/
+        echo "🧹 清理完成"
+        """
+
+rule help:
+    """显示帮助信息"""
+    run:
+        print("""
+🐍 Flowcontainer 测试 Snakefile
+
+可用规则:
+  - all:                    运行所有测试
+  - test_rsem_container:    测试 RSEM 容器
+  - test_samtools_container: 测试 Samtools 容器
+  - multi_tool_in_one_container: 多工具测试
+  - force_local_image:      强制使用本地镜像
+  - force_specific_registry: 使用指定 registry
+  - dynamic_image_selection: 动态选择镜像
+  - list_available_images:  列出可用镜像
+  - clean:                  清理结果
+  - help:                   显示此帮助
+
+使用容器运行:
+  snakemake -c 1 --use-singularity
+
+本地运行 (不使用容器):
+  snakemake -c 1
+
+使用特定镜像:
+  snakemake -c 1 test_rsem_container --use-singularity
+
+强制使用本地镜像:
+  snakemake -c 1 force_local_image --use-singularity
+
+使用指定 registry:
+  snakemake -c 1 force_specific_registry --use-singularity \
+    --config registry='docker.io/username/'
+
+查看帮助:
+  snakemake help
+""")
