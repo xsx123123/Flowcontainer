@@ -1,0 +1,83 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "Flowcontainer"
+version = "1.0.0"
+description = "生物信息学工作流容器镜像构建工具"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    {name = "Flowcontainer Team"},
+]
+keywords = [
+    "docker",
+    "container",
+    "bioinformatics",
+    "conda",
+    "workflow",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Software Development :: Build Tools",
+]
+dependencies = [
+    "docker>=6.0.0",
+    "loguru>=0.7.0",
+    "pyyaml>=6.0",
+    "rich>=13.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+]
+
+[project.scripts]
+flowcontainer = "Flowcontainer.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/flowcontainer"
+Repository = "https://github.com/yourusername/flowcontainer"
+Issues = "https://github.com/yourusername/flowcontainer/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["Flowcontainer"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/Flowcontainer",
+    "/README.md",
+    "/LICENSE",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312']
+
+[tool.ruff]
+line-length = 100
+select = ["E", "F", "W", "I", "N", "D", "UP", "B", "C4", "SIM"]
+ignore = ["D100", "D104", "D107"]
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true

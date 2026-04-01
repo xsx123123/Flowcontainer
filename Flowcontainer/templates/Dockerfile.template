@@ -1,0 +1,29 @@
+# Flowcontainer 自动生成 Dockerfile
+# 环境: {{env_name}}
+FROM condaforge/mambaforge:latest
+
+LABEL maintainer="Flowcontainer"
+LABEL env_name="{{env_name}}"
+
+# 设置工作目录
+WORKDIR /opt
+
+# 复制环境文件
+COPY {{env_file}} /tmp/environment.yaml
+
+# 创建 conda 环境
+RUN mamba env create -f /tmp/environment.yaml -n {{env_name}} -y && \
+    mamba clean -afy
+
+# 设置环境变量
+ENV PATH=/opt/conda/envs/{{env_name}}/bin:$PATH
+ENV CONDA_DEFAULT_ENV={{env_name}}
+
+# 健康检查
+{% if health_check_cmd %}
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD {{health_check_cmd}} || exit 1
+{% endif %}
+
+# 默认命令
+CMD ["/bin/bash"]
