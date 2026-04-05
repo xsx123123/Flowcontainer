@@ -142,6 +142,10 @@ def create_parser() -> argparse.ArgumentParser:
         help="镜像仓库地址",
     )
     batch_parser.add_argument(
+        "-t", "--tag",
+        help="镜像版本标签 (例如: 1.0.0, v2.1)，将覆盖配置文件中的 default_version",
+    )
+    batch_parser.add_argument(
         "--push",
         action="store_true",
         help="构建后推送镜像",
@@ -151,6 +155,16 @@ def create_parser() -> argparse.ArgumentParser:
         type=Path,
         default=Path("container_env.yaml"),
         help="输出容器环境配置",
+    )
+    batch_parser.add_argument(
+        "--no-cache",
+        action="store_true",
+        help="不使用 Docker 缓存",
+    )
+    batch_parser.add_argument(
+        "--cleanup",
+        action="store_true",
+        help="构建完成后清理悬空镜像 (<none>:<none>)",
     )
     
     # doctor 命令
@@ -260,6 +274,9 @@ def cmd_batch(args) -> int:
         env_dir=args.env_dir,
         registry=args.registry,
         push=args.push,
+        version_tag=args.tag,
+        no_cache=args.no_cache,
+        cleanup_dangling=args.cleanup,
     )
     
     # 打印摘要

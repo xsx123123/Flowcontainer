@@ -373,6 +373,59 @@ class DockerClient:
         """关闭客户端连接"""
         if self.api:
             self.api.close()
+    
+    def cleanup_dangling_images(self) -> int:
+        """清理悬空镜像 (dangling images)
+        
+        Returns:
+            清理的镜像数量
+        """
+        try:
+            # 获取所有悬空镜像
+            dangling_images = self.client.images.list(filters={'dangling': True})
+            
+            if not dangling_images:
+                return 0
+            
+            count = 0
+            for image in dangling_images:
+                try:
+                    # 获取镜像信息用于日志
+                    short_id = image.id.replace('sha256:', '')[:12]
+                    size_mb = image.attrs.get('Size', 0) / (1024 * 1024)
+                    
+                    self.client.images.remove(image.id, force=False)
+                    logger.debug(f"   删除悬空镜像: {short_id} ({size_mb:.1f}MB)")
+                    count += 1
+                except Exception as e:
+                    logger.debug(f"   删除镜像 {short_id} 失败: {e}")
+            
+            return count
+        except Exception as e:
+            logger.debug(f"清理悬空镜像失败: {e}")
+            return 0
+    
+    def get_dangling_images(self) -> List[Dict]:
+        """获取悬空镜像列表
+        
+        Returns:
+            悬空镜像信息列表
+        """
+        try:
+            dangling_images = self.client.images.list(filters={'dangling': True})
+            result = []
+            for image in dangling_images:
+                size_bytes = image.attrs.get('Size', 0)
+                result.append({
+                    'id': image.id.replace('sha256:', '')[:12],
+                    'created': image.attrs.get('Created', ''),
+                    'size_bytes': size_bytes,
+                    'size_mb': size_bytes / (1024 * 1024),
+                })
+            return result
+        except Exception as e:
+            logger.debug(f"获取悬空镜像失败: {e}")
+            return []
 
 
 # 全局客户端实例

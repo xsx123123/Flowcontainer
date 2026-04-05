@@ -371,7 +371,7 @@ class ImageBuilder:
             logger.error(f"💔 构建过程异常: {e}")
             return ImageBuildResult(
                 env_name=env_name,
-                tag=tag,
+                tag=tag if 'tag' in locals() else f"{self.config.config.build.default_tag_prefix}-{env_name}:{self.config.config.build.default_version}",
                 status="failed",
                 duration=duration,
                 error_msg=str(e),
@@ -385,8 +385,20 @@ class ImageBuilder:
         env_dir: Path,
         registry: Optional[str] = None,
         push: bool = False,
+        version_tag: Optional[str] = None,
+        no_cache: bool = False,
+        cleanup_dangling: bool = False,
     ) -> List[ImageBuildResult]:
-        """批量构建目录中的所有 yaml 文件"""
+        """批量构建目录中的所有 yaml 文件
+        
+        Args:
+            env_dir: 包含环境文件的目录
+            registry: 镜像仓库地址
+            push: 是否推送镜像
+            version_tag: 统一的版本标签 (例如: "1.0.0", "v2.1")
+            no_cache: 是否不使用 Docker 缓存
+            cleanup_dangling: 构建完成后是否清理悬空镜像
+        """
         yaml_files = sorted(list(env_dir.glob("*.yaml")) + list(env_dir.glob("*.yml")))
         
         if not yaml_files:
@@ -395,17 +407,51 @@ class ImageBuilder:
         
         logger.info(f"📦 批量构建模式，找到 [cyan]{len(yaml_files)}[/cyan] 个环境文件")
         
-        results = []
-        for idx, yaml_file in enumerate(yaml_files, 1):
-            logger.info(f"🔧 [{idx}/{len(yaml_files)}] 处理: [cyan]{yaml_file.name}[/cyan]")
-            result = self.build(
-                env_file=yaml_file,
-                registry=registry,
-                push=push,
-            )
-            results.append(result)
+        # 如果指定了版本标签，临时覆盖配置中的版本
+        original_version = None
+        if version_tag:
+            original_version = self.config.config.build.default_version
+            self.config.config.build.default_version = version_tag
+            logger.info(f"🏷️  使用统一版本标签: [cyan]{version_tag}[/cyan]")
         
-        return results
+        try:
+            results = []
+            env_yaml = ContainerEnvYaml(self.config.config.build.output_yaml if hasattr(self.config.config.build, 'output_yaml') else Path("container_env.yaml"))
+            
+            for idx, yaml_file in enumerate(yaml_files, 1):
+                logger.info(f"🔧 [{idx}/{len(yaml_files)}] 处理: [cyan]{yaml_file.name}[/cyan]")
+                result = self.build(
+                    env_file=yaml_file,
+                    registry=registry,
+                    push=push,
+                    no_cache=no_cache,
+                )
+                results.append(result)
+                
+                # 实时写入：每成功一个立即更新 container_env.yaml
+                if result.status == "success":
+                    env_yaml.update([result])
+                    logger.debug(f"   已实时更新配置: {result.tag}")
+                
+                # 如果构建失败且启用了清理，清理悬空镜像
+                if result.status == "failed" and cleanup_dangling:
+                    logger.info("🧹 清理悬空镜像...")
+                    cleaned = self.docker.cleanup_dangling_images()
+                    if cleaned > 0:
+                        logger.info(f"   清理了 [cyan]{cleaned}[/cyan] 个悬空镜像")
+            
+            # 批量构建完成后，如果启用了清理，统一清理悬空镜像
+            if cleanup_dangling:
+                logger.info("🧹 批量清理悬空镜像...")
+                cleaned = self.docker.cleanup_dangling_images()
+                if cleaned > 0:
+                    logger.info(f"   共清理 [cyan]{cleaned}[/cyan] 个悬空镜像")
+            
+            return results
+        finally:
+            # 恢复原始版本配置
+            if original_version is not None:
+                self.config.config.build.default_version = original_version
 
 
 class ContainerEnvYaml:
@@ -428,7 +474,11 @@ class ContainerEnvYaml:
             image_name = result.tag.split(":")[0]
             full_image_uri = result.tag
             if result.registry:
-                full_image_uri = f"{result.registry}{result.tag}"
+                registry = result.registry.rstrip("/")
+                full_image_uri = f"{registry}/{result.tag}"
+            
+            # 生成 Apptainer URI 和命令
+            apptainer_data = self._generate_apptainer_info(result.tag, result.registry, image_name)
             
             image_record = {
                 "tag": result.tag,
@@ -441,6 +491,7 @@ class ContainerEnvYaml:
                 "env_file": result.env_file,
                 "tools": result.tools_detected,
                 "pushed": result.pushed,
+                "apptainer": apptainer_data,
             }
             
             if result.push_time:
@@ -458,6 +509,39 @@ class ContainerEnvYaml:
             yaml.dump(existing_data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
         
         logger.info(f"📝 容器环境配置已更新: [cyan]{self.output_path}[/cyan]")
+    
+    def _generate_apptainer_info(self, tag: str, registry: Optional[str], image_name: str) -> Dict[str, str]:
+        """生成 Apptainer 相关信息
+        
+        Args:
+            tag: 镜像标签 (例如: flowcontainer-preseq:latest)
+            registry: 镜像仓库地址 (例如: docker.io/flowcontainer)
+            image_name: 镜像名称 (例如: flowcontainer-preseq)
+            
+        Returns:
+            Apptainer 相关信息字典
+        """
+        # 构建 Apptainer URI (docker:// 格式)
+        if registry:
+            # 完整 registry 路径: docker://docker.io/flowcontainer/flowcontainer-preseq:latest
+            registry_clean = registry.rstrip("/")
+            apptainer_uri = f"docker://{registry_clean}/{tag}"
+        else:
+            # 本地镜像: docker://flowcontainer-preseq:latest
+            apptainer_uri = f"docker://{tag}"
+        
+        # 生成的 .sif 文件名
+        sif_name = f"{image_name}.sif"
+        
+        return {
+            "uri": apptainer_uri,
+            "sif_name": sif_name,
+            "pull_cmd": f"apptainer pull {sif_name} {apptainer_uri}",
+            "exec_cmd": f"apptainer exec {apptainer_uri} <command>",
+            "shell_cmd": f"apptainer shell {apptainer_uri}",
+            "run_cmd": f"apptainer run {apptainer_uri}",
+            "docker_fallback": f"singularity pull {sif_name} {apptainer_uri}",
+        }
     
     def _load_existing(self) -> Dict:
         """加载现有配置"""

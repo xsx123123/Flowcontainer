@@ -8,12 +8,34 @@ LABEL env_name="{{env_name}}"
 # 设置工作目录
 WORKDIR /opt
 
+# 配置国内镜像源（加速下载）
+RUN cat > /opt/conda/.condarc << 'EOF'
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+show_channel_urls: true
+default_channels:
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/r
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/msys2
+custom_channels:
+  conda-forge: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  bioconda: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+channel_priority: flexible
+remote_connect_timeout_secs: 30
+remote_read_timeout_secs: 120
+EOF
+
 # 复制环境文件
 COPY {{env_file}} /tmp/environment.yaml
 
-# 创建 conda 环境
-RUN mamba env create -f /tmp/environment.yaml -n {{env_name}} -y && \
-    mamba clean -afy
+# 创建 conda 环境（带重试机制）
+RUN for i in 1 2 3; do \
+        mamba env create -f /tmp/environment.yaml -n {{env_name}} -y && \
+        mamba clean -afy && break || \
+        (echo "Attempt $i failed, retrying..." && sleep 10); \
+    done
 
 # 设置环境变量
 ENV PATH=/opt/conda/envs/{{env_name}}/bin:$PATH
